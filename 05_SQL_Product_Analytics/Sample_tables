@@ -1,0 +1,361 @@
+Sample Tables
+
+users
+---------
+user_id
+signup_date
+city
+device
+customer_type
+Orders
+orders
+---------
+order_id
+user_id
+restaurant_id
+order_date
+order_value
+order_status
+delivery_time
+coupon_used
+Restaurants
+restaurants
+-------------
+restaurant_id
+restaurant_name
+category
+city
+
+
+Metrics:
+
+1. Daily Active Users (DAU)
+
+SELECT
+    order_date,
+    COUNT(DISTINCT user_id) AS dau
+FROM orders
+GROUP BY order_date
+ORDER BY order_date;
+
+
+2. Monthly Active Users (MAU)
+SELECT
+    DATE_TRUNC('month', order_date) AS month,
+    COUNT(DISTINCT user_id) AS mau
+FROM orders
+GROUP BY month
+ORDER BY month;
+
+
+3. Total Revenue
+SELECT
+SUM(order_value) AS total_revenue
+FROM orders
+WHERE order_status='Delivered';
+
+
+
+4. Average Order Value (AOV)
+SELECT
+
+AVG(order_value) AS average_order_value
+
+FROM orders
+WHERE order_status='Delivered';
+
+
+5. Top 10 Customers
+SELECT
+
+user_id,
+
+SUM(order_value) AS revenue
+
+FROM orders
+
+GROUP BY user_id
+
+ORDER BY revenue DESC
+
+LIMIT 10;
+
+
+6. Top Restaurants
+SELECT
+
+restaurant_id,
+
+COUNT(*) AS total_orders
+
+FROM orders
+
+GROUP BY restaurant_id
+
+ORDER BY total_orders DESC;
+
+
+7. Conversion Rate
+
+Suppose
+
+Visitors = 20,000
+Orders = 3,200
+SELECT
+
+(COUNT(*)*100.0)/20000 AS conversion_rate
+
+FROM orders
+
+WHERE order_status='Delivered';
+
+
+8. New Users per Month
+SELECT
+
+DATE_TRUNC('month',signup_date),
+
+COUNT(*) AS new_users
+
+FROM users
+
+GROUP BY 1;
+
+
+9. Repeat Customers
+SELECT
+
+user_id,
+
+COUNT(*) AS orders
+
+FROM orders
+
+GROUP BY user_id
+
+HAVING COUNT(*)>1;
+
+
+10. Retention Rate
+WITH jan_users AS
+(
+SELECT DISTINCT user_id
+FROM orders
+WHERE order_date BETWEEN '2026-01-01'
+AND '2026-01-31'
+),
+
+feb_users AS
+(
+SELECT DISTINCT user_id
+FROM orders
+WHERE order_date BETWEEN '2026-02-01'
+AND '2026-02-28'
+)
+
+SELECT
+
+COUNT(f.user_id)*100.0/
+
+COUNT(j.user_id)
+
+AS retention_rate
+
+FROM jan_users j
+
+LEFT JOIN feb_users f
+
+ON j.user_id=f.user_id;
+
+
+11. Churn Rate
+WITH jan_users AS
+(
+SELECT DISTINCT user_id
+FROM orders
+WHERE DATE_TRUNC('month',order_date)='2026-01-01'
+),
+
+feb_users AS
+(
+SELECT DISTINCT user_id
+FROM orders
+WHERE DATE_TRUNC('month',order_date)='2026-02-01'
+)
+
+SELECT
+
+100-
+
+COUNT(f.user_id)*100.0/
+
+COUNT(j.user_id)
+
+AS churn_rate
+
+FROM jan_users j
+
+LEFT JOIN feb_users f
+
+ON j.user_id=f.user_id;
+
+
+12. Monthly Revenue
+SELECT
+
+DATE_TRUNC('month',order_date) AS month,
+
+SUM(order_value) revenue
+
+FROM orders
+
+GROUP BY month
+
+ORDER BY month;
+
+
+13. Monthly Growth %
+WITH revenue AS
+(
+SELECT
+
+DATE_TRUNC('month',order_date) month,
+
+SUM(order_value) revenue
+
+FROM orders
+
+GROUP BY month
+)
+
+SELECT
+
+month,
+
+revenue,
+
+LAG(revenue) OVER(ORDER BY month) previous,
+
+ROUND(
+(revenue-
+LAG(revenue) OVER(ORDER BY month))
+
+*100.0/
+
+LAG(revenue) OVER(ORDER BY month),2)
+
+growth
+
+FROM revenue;
+
+
+14. Customer Lifetime Value (CLV)
+SELECT
+
+user_id,
+
+SUM(order_value) AS lifetime_value
+
+FROM orders
+
+GROUP BY user_id;
+
+
+15. Customer Segmentation
+SELECT
+
+customer_type,
+
+COUNT(*) users
+
+FROM users
+
+GROUP BY customer_type;
+
+
+16. Coupon Usage
+SELECT
+
+coupon_used,
+
+COUNT(*) total_orders
+
+FROM orders
+
+GROUP BY coupon_used;
+
+
+17. Average Delivery Time
+SELECT
+
+AVG(delivery_time)
+
+FROM orders
+
+WHERE order_status='Delivered';
+
+
+18. Top Cities by Revenue
+SELECT
+
+u.city,
+
+SUM(o.order_value) revenue
+
+FROM orders o
+
+JOIN users u
+
+ON o.user_id=u.user_id
+
+GROUP BY u.city
+
+ORDER BY revenue DESC;
+
+
+19. Funnel Analysis
+SELECT
+
+SUM(visitors) visitors,
+
+SUM(signups) signups,
+
+SUM(activated) activated,
+
+SUM(orders) orders
+
+FROM product_metrics;
+
+
+20. DAU/MAU Stickiness
+WITH daily AS
+(
+SELECT
+
+COUNT(DISTINCT user_id) dau
+
+FROM orders
+
+WHERE order_date='2026-06-15'
+),
+
+monthly AS
+(
+SELECT
+
+COUNT(DISTINCT user_id) mau
+
+FROM orders
+
+WHERE DATE_TRUNC('month',order_date)='2026-06-01'
+)
+
+SELECT
+
+dau,
+
+mau,
+
+ROUND(dau*100.0/mau,2) AS stickiness
+
+FROM daily,monthly;
