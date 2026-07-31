@@ -105,7 +105,7 @@ Impact vs Effort Matrix
 
 ## Contact
 
-LinkedIn: (Add later)
+LinkedIn: https://www.linkedin.com/in/naveenkumarupputuri
 
 Email:
 naveenkumar.upputuri@gmail.com
